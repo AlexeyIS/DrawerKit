@@ -16,12 +16,16 @@ final class PresentationController: UIPresentationController {
     /// progress, the value should be equivalent to `currentDrawerState`.
     var targetDrawerState: DrawerState {
         didSet {
-            drawerDismissalTapGR?.isEnabled = targetDrawerState == .partiallyExpanded
-            drawerFullExpansionTapGR?.isEnabled = targetDrawerState == .partiallyExpanded
+            targetDrawerStateDidChange()
         }
     }
 
     var startingDrawerStateForDrag: DrawerState?
+
+    var scrollTranslationY: CGFloat = 0.0
+    var scrollMaxTopInset: CGFloat = 0.0
+    var scrollEndVelocity: CGPoint?
+    var scrollWillEndDragging = false
 
     init(presentingVC: UIViewController?,
          presentingDrawerAnimationActions: DrawerAnimationActions,
@@ -37,6 +41,20 @@ final class PresentationController: UIPresentationController {
         self.targetDrawerState = configuration.supportsPartialExpansion ? .partiallyExpanded : .fullyExpanded
 
         super.init(presentedViewController: presentedVC, presenting: presentingVC)
+    }
+
+    func targetDrawerStateDidChange() {
+        drawerDismissalTapGR?.isEnabled = targetDrawerState == .partiallyExpanded
+        drawerFullExpansionTapGR?.isEnabled = targetDrawerState == .partiallyExpanded
+
+        if let scrollView = scrollViewForPullToDismiss {
+            switch targetDrawerState {
+            case .partiallyExpanded, .collapsed:
+                scrollView.isScrollEnabled = false
+            case .transitioning, .fullyExpanded:
+                scrollView.isScrollEnabled = true
+            }
+        }
     }
 }
 
@@ -54,6 +72,10 @@ extension PresentationController {
     }
 
     override func presentationTransitionWillBegin() {
+        // NOTE: `targetDrawerState.didSet` is not invoked within the
+        //        initializer.
+        targetDrawerStateDidChange()
+
         presentedViewController.view.layoutIfNeeded()
         containerView?.backgroundColor = .clear
         setupDrawerFullExpansionTapRecogniser()
@@ -66,6 +88,11 @@ extension PresentationController {
         addCornerRadiusAnimationEnding(at: .partiallyExpanded)
         enableDrawerFullExpansionTapRecogniser(enabled: false)
         enableDrawerDismissalTapRecogniser(enabled: false)
+
+        if let scrollView = scrollViewForPullToDismiss {
+            scrollView.delegate = self
+            drawerDragGR?.require(toFail: scrollView.panGestureRecognizer)
+        }
     }
 
     override func presentationTransitionDidEnd(_ completed: Bool) {

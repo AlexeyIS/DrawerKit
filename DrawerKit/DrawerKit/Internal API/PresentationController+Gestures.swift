@@ -27,9 +27,7 @@ extension PresentationController {
             fallthrough
 
         case .changed:
-            currentDrawerY += panGesture.translation(in: view).y
-            targetDrawerState = currentDrawerState
-            currentDrawerCornerRadius = cornerRadius(at: currentDrawerState)
+            applyTranslationY(panGesture.translation(in: view).y)
             panGesture.setTranslation(.zero, in: view)
 
         case .ended:
@@ -50,6 +48,12 @@ extension PresentationController {
         default:
             break
         }
+    }
+
+    func applyTranslationY(_ translationY: CGFloat) {
+        currentDrawerY += translationY
+        targetDrawerState = currentDrawerState
+        currentDrawerCornerRadius = cornerRadius(at: currentDrawerState)
     }
 }
 

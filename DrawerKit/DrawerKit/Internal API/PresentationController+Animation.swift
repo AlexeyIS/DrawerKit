@@ -1,7 +1,7 @@
 import UIKit
 
 extension PresentationController {
-    func animateTransition(to endingState: DrawerState) {
+    func animateTransition(to endingState: DrawerState, animateAlongside: (() -> Void)? = nil, completion: (() -> Void)? = nil) {
         let startingState = currentDrawerState
 
         let maxCornerRadius = maximumCornerRadius
@@ -55,6 +55,7 @@ extension PresentationController {
             AnimationSupport.clientAnimateAlong(presentingDrawerAnimationActions: presentingAnimationActions,
                                                 presentedDrawerAnimationActions: presentedAnimationActions,
                                                 info)
+            animateAlongside?()
         }
 
         animator.addCompletion { endingPosition in
@@ -91,6 +92,8 @@ extension PresentationController {
                                                 presentedDrawerAnimationActions: presentedAnimationActions,
                                                 endingPosition,
                                                 info)
+
+            completion?()
         }
 
         animator.startAnimation()
